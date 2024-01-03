@@ -1,239 +1,161 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  
-  
-  <title>SorenDing的避难所</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="AUTOSAR相关厂商：​	东风、长城、一汽、上汽、吉利、蔚来、拜腾、宁德时代 ​	特斯拉未加入AUTOSAR联盟 先导概念：制造业的五种模式OEM、ODM、OBM、JDM、CMTOEM: 原始设备制造商  特征：技术在外、资本在外、市场在外，生产在内 A设计、B生产、A品牌、A销售  ODM: 原始设计制造商  特征：B设计、B生产、A品牌、A销售，ODM厂商自己设计生产，品牌和销售为其他合作厂">
-<meta property="og:type" content="article">
-<meta property="og:title" content="SorenDing的避难所">
-<meta property="og:url" content="http://example.com/2024/01/03/AUTOSAR/index.html">
-<meta property="og:site_name" content="SorenDing的避难所">
-<meta property="og:description" content="AUTOSAR相关厂商：​	东风、长城、一汽、上汽、吉利、蔚来、拜腾、宁德时代 ​	特斯拉未加入AUTOSAR联盟 先导概念：制造业的五种模式OEM、ODM、OBM、JDM、CMTOEM: 原始设备制造商  特征：技术在外、资本在外、市场在外，生产在内 A设计、B生产、A品牌、A销售  ODM: 原始设计制造商  特征：B设计、B生产、A品牌、A销售，ODM厂商自己设计生产，品牌和销售为其他合作厂">
-<meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://pic2.zhimg.com/v2-fda33fefe856da3576716889c40f61e5_r.jpg">
-<meta property="article:published_time" content="2024-01-03T15:35:15.853Z">
-<meta property="article:modified_time" content="2023-12-29T09:50:28.000Z">
-<meta property="article:author" content="Soren Ding">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://pic2.zhimg.com/v2-fda33fefe856da3576716889c40f61e5_r.jpg">
-  
-    <link rel="alternate" href="/atom.xml" title="SorenDing的避难所" type="application/atom+xml">
-  
-  
-    <link rel="shortcut icon" href="/favicon.png">
-  
-  
-  
-<link rel="stylesheet" href="/css/style.css">
+const { Component } = require('inferno');
+const classname = require('hexo-component-inferno/lib/util/classname');
+const Head = require('./common/head');
+const Navbar = require('./common/navbar');
+const Widgets = require('./common/widgets');
+const Footer = require('./common/footer');
+const Scripts = require('./common/scripts');
+const Search = require('./common/search');
 
-  
-    
-<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+module.exports = class extends Component {
+    render() {
+        const { site, config, page, helper, body } = this.props;
+        const { comment, use_pjax, has_banner } = config;
+        const { __, my_cdn, url_for } = helper;
 
-  
-  
-<meta name="generator" content="Hexo 7.0.0"></head>
+        // 默认不加载公式，文中头部开启mathJax:true才加载
+        var isMath = page.mathJax != undefined && page.mathJax;
+        const language = page.lang || page.language || config.language;
+        const columnCount = Widgets.getColumnCount(config.widgets);
+        const hasComment = comment != undefined && comment.type != undefined && (comment.type == 'gitalk' || comment.type == 'valine')
+            && (comment.has_hot_recommend || comment.has_latest_comment);
+        var appKey;
+        var appId;
+        var userName;
+        var userRepo;
+        var isValine;
 
-<body>
-  <div id="container">
-    <div id="wrap">
-      <header id="header">
-  <div id="banner"></div>
-  <div id="header-outer" class="outer">
-    <div id="header-title" class="inner">
-      <h1 id="logo-wrap">
-        <a href="/" id="logo">SorenDing的避难所</a>
-      </h1>
-      
-        <h2 id="subtitle-wrap">
-          <a href="/" id="subtitle">循此苦旅，以达星辰</a>
-        </h2>
-      
-    </div>
-    <div id="header-inner" class="inner">
-      <nav id="main-nav">
-        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        if (comment != undefined && comment.type != undefined && comment.type == 'gitalk') {
+            appId = comment.client_id;
+            appKey = comment.client_secret;
+            userName = comment.owner;;
+            userRepo = comment.repo;
+            isValine = false;
+        } else if (comment != undefined && comment.type != undefined && comment.type == 'valine') {
+            appId = comment.app_id;
+            appKey = comment.app_key;
+            userName = comment.owner;
+            isValine = true;
+        }
+        var hotTitle = __('widget.hot_recommend');
+        var hotTip = __('widget.hot_recommend_tip');
+
+        // =====index hot_recommend
+        var hotRecommendStr =
+            `<div class="card widget">
+            <div class="card-content">
+                <h3 class="menu-label">${hotTitle}</h3><span id="index_hot_div">${hotTip}</span>
+            </div>
+        </div>`;
+
+        // =====index banner
+        var bannerStr =
+            `<div class="card widget">
+            <div class="card-content1 card-image">
+                <span id="banner"><div class="card-content ">Banner ${hotTip}</div></span>
+            </div>
+        </div>`;
         
-          <a class="main-nav-link" href="/">Home</a>
+        // mathjax support 使用方法 md文章头部开启mathJax: true，md文章中公式格式：$$f(x) = a_1x^n + a_2x^{n-1} + a_3x^{n-2}$$
+        var mathJaxJs = `function loadMathJax() { //加载mathjax
+            $.getScript("//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML", function () {
+                MathJax.Hub.Config({ tex2jax: { inlineMath: [['$', '$'], ['\\(', '\\)']] } });
+                var math = document.getElementsByClassName("entry-content")[0];
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, math]);
+            });
+        };loadMathJax();`;
+
+        var pjaxJs = `var pjax = new Pjax({
+            elements: "a",//代表点击链接就更新
+            selectors: [  //代表要更新的节点
+                ".section",
+                "title"
+            ],
+            cache: true,
+            cacheBust:false
+        })
+
+        function loadBusuanzi(){
+        $.getScript("//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js", function () {});
+        }
+
+        function loadMathJax() { //加载mathjax
+            $.getScript("//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML", function () {
+                MathJax.Hub.Config({ tex2jax: { inlineMath: [['$', '$'], ['\\(', '\\)']] } });
+                var math = document.getElementsByClassName("entry-content")[0];
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, math]);
+            });
+        };
+
+        // 开始 PJAX 执行的函数
+        document.addEventListener('pjax:send', function () {
+        });
         
-          <a class="main-nav-link" href="/archives">Archives</a>
-        
-      </nav>
-      <nav id="sub-nav">
-        
-        
-          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
-        
-        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
-      </nav>
-      <div id="search-form-wrap">
-        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
-      </div>
-    </div>
-  </div>
-</header>
+        // PJAX 完成之后执行的函数，可以和上面的重载放在一起
+        document.addEventListener('pjax:complete', function () {
+            $(".section").css({opacity:1});
+            if(${hasComment}){
+                $.getScript('${my_cdn(url_for('/js/comment-issue-data.js'))}',function(){loadIssueData('${appId}','${appKey}','${userName}','${userRepo}',${isValine});});
+            }
+            if(${isMath}){
+                loadMathJax();
+            }
+            loadMainJs(jQuery, window.moment, window.ClipboardJS, window.IcarusThemeSettings);
+            loadBackTop();
+            loadBusuanzi();
+            if(typeof loadBanner == 'function'){
+                loadBanner();
+            }
+        });`;
 
-      <div class="outer">
-        <section id="main"><article id="post-AUTOSAR" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2024/01/03/AUTOSAR/" class="article-date">
-  <time class="dt-published" datetime="2024-01-03T15:35:15.853Z" itemprop="datePublished">2024-01-03</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="AUTOSAR"><a href="#AUTOSAR" class="headerlink" title="AUTOSAR"></a>AUTOSAR</h1><h2 id="相关厂商："><a href="#相关厂商：" class="headerlink" title="相关厂商："></a>相关厂商：</h2><p>​	东风、长城、一汽、上汽、吉利、蔚来、拜腾、宁德时代</p>
-<p>​	特斯拉未加入AUTOSAR联盟</p>
-<h2 id="先导概念：制造业的五种模式OEM、ODM、OBM、JDM、CMT"><a href="#先导概念：制造业的五种模式OEM、ODM、OBM、JDM、CMT" class="headerlink" title="先导概念：制造业的五种模式OEM、ODM、OBM、JDM、CMT"></a>先导概念：制造业的五种模式OEM、ODM、OBM、JDM、CMT</h2><p><strong>OEM: 原始设备制造商</strong></p>
-<ul>
-<li>特征：技术在外、资本在外、市场在外，生产在内</li>
-<li>A设计、B生产、A品牌、A销售</li>
-</ul>
-<p><strong>ODM: 原始设计制造商</strong></p>
-<ul>
-<li>特征：B设计、B生产、A品牌、A销售，ODM厂商自己设计生产，品牌和销售为其他合作厂商</li>
-<li>买断方式：品牌合作方买断某型号产品的设计，或要求ODM厂商为自己设计产品方案</li>
-<li>非买断式：ODM厂商可以将产品卖给不同的品牌</li>
-</ul>
-<p><strong>OBM：自创品牌、自行销售、自行设计、自行生产，主体为品牌商</strong></p>
-<p><strong>JDM: 共同设计制造</strong></p>
-<p><strong>CMT：来料加工</strong></p>
-<ul>
-<li>CUTTING、MAKING、TRIMMING</li>
-<li>进口商提供一定的原材料、半成品、零部件、元器材，出口商根据进口商的要求进行加工装配</li>
-</ul>
-<h2 id="AUTOSAR软件架构"><a href="#AUTOSAR软件架构" class="headerlink" title="AUTOSAR软件架构"></a>AUTOSAR软件架构</h2><p><img src="https://pic2.zhimg.com/v2-fda33fefe856da3576716889c40f61e5_r.jpg" alt="img"></p>
-<ul>
-<li><strong>微控制器（Microcontroller）</strong>：即控制器硬件。</li>
-<li><strong>基础软件层（Basic Software Layer，BSW）</strong>:基础软件层，它包含了以下4个部分：<ul>
-<li><strong>微控制器抽象层（Microcontroller Abstraction Layer，MCAL）</strong>：是与硬件直接相关的驱动软件，例如对存储器、通信寄存器、IO口的操作等等。</li>
-<li><strong>ECU抽象层（ECU Abstraction Layer，ECUAL）</strong>：是对控制器的基础功能和接口进行统一，比如CAN报文内容的解析、网关报文的转发、存储器读写流程的控制等等。</li>
-<li><strong>服务层（Services Layer）</strong>：为应用层提供各种后台服务，比如网络管理、存储器管理、总线通信管理服务以及操作系统等。</li>
-<li><strong>复杂设备驱动（Complex Device Drivers，CDD）</strong>：为用户提供了一个可以自行编写特殊设备驱动软件的可能性。</li>
-</ul>
-</li>
-<li><strong>运行环境（Runtime Environment，RTE）</strong>：是AUTOSAR的核心，它将应用软件层与基础软件层剥离开来，为应用层软件提供运行环境，如进程时间片调度、应用层模块之间以及应用层与基础软件层之间的数据交换等。</li>
-<li><strong>应用软件层（Application Software Layer，ASW）</strong>：即实现具体应用功能的软件。它可以包含多个<strong>软件组件（Software Component，SWC）</strong>。</li>
-</ul>
+        if (comment == undefined || comment.type == undefined
+            || comment.type != 'gitalk'
+            || comment.has_hot_recommend == undefined
+            || !comment.has_hot_recommend) {
+            hotRecommendStr = '';
+        }
 
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2024/01/03/AUTOSAR/" data-id="clqxxztk50000r4vn73m46ogl" data-title="" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-    
-<nav id="article-nav">
-  
-  
-    <a href="/2024/01/03/My-new-Post/" id="article-nav-older" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Older</strong>
-      <div class="article-nav-title">My new Post</div>
-    </a>
-  
-</nav>
+        var indexTopData = hotRecommendStr;
 
-  
-</article>
+        const hasBanner = has_banner != undefined && has_banner;
 
+        if (indexTopData == '' && hasBanner) {
+            indexTopData = bannerStr;
+        }
 
-</section>
-        
-          <aside id="sidebar">
-  
-    
+        if (page.path != 'index.html') {
+            indexTopData = '';
+        }
 
-  
-    
-
-  
-    
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">Archives</h3>
-    <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2024/01/">January 2024</a></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">Recent Posts</h3>
-    <div class="widget">
-      <ul>
-        
-          <li>
-            <a href="/2024/01/03/AUTOSAR/">(no title)</a>
-          </li>
-        
-          <li>
-            <a href="/2024/01/03/My-new-Post/">My new Post</a>
-          </li>
-        
-          <li>
-            <a href="/2024/01/03/hello-world/">Hello World</a>
-          </li>
-        
-      </ul>
-    </div>
-  </div>
-
-  
-</aside>
-        
-      </div>
-      <footer id="footer">
-  
-  <div class="outer">
-    <div id="footer-info" class="inner">
-      
-      &copy; 2024 Soren Ding<br>
-      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
-    </div>
-  </div>
-</footer>
-
-    </div>
-    <nav id="mobile-nav">
-  
-    <a href="/" class="mobile-nav-link">Home</a>
-  
-    <a href="/archives" class="mobile-nav-link">Archives</a>
-  
-</nav>
-    
-
-
-<script src="/js/jquery-3.6.4.min.js"></script>
-
-
-
-  
-<script src="/fancybox/jquery.fancybox.min.js"></script>
-
-
-
-
-<script src="/js/script.js"></script>
-
-
-
-
-
-  </div>
-</body>
-</html>
+        let isPageOrPost = page.layout == 'page' || page.layout == 'post';
+        return <html lang={language ? language.substr(0, 2) : ''}>
+            <Head site={site} config={config} helper={helper} page={page} />
+            <body className={`is-${columnCount}-column has-navbar-fixed-top`}>
+                <Navbar config={config} helper={helper} page={page} />
+                <script type="text/javascript" src={my_cdn(url_for('/js/theme-setting.js'))}></script>
+                <section class="section">
+                    <div class="container">
+                        <div class="columns">
+                            <div class={classname({
+                                column: true,
+                                'order-2': true,
+                                'column-main': true,
+                                'is-12': columnCount === 1,
+                                'is-8-tablet is-8-desktop is-6-widescreen': (page.layout != 'post' && page.layout != 'page') && columnCount === 3,
+                                'is-8-tablet is-8-desktop is-9-widescreen': columnCount === 2 || page.layout === 'post'
+                            })} dangerouslySetInnerHTML={{__html: indexTopData + body}}></div>
+                            <Widgets site={site} config={config} helper={helper} page={page} position={'left'}/>
+                            {isPageOrPost ? null : <Widgets site={site} config={config} helper={helper} page={page} position={'right'}/>}
+                        </div>
+                    </div>
+                </section>
+                <Footer config={config} helper={helper} />
+                <Scripts site={site} config={config} helper={helper} page={page} />
+                <Search config={config} helper={helper} />
+                {use_pjax ? <script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.js"></script> : null}
+                {use_pjax ? <script type="text/javascript" dangerouslySetInnerHTML={{ __html: pjaxJs }}></script> : null}
+                {isMath ? <script type="text/javascript" dangerouslySetInnerHTML={{ __html: mathJaxJs }}></script> : null}
+            </body>
+        </html>;
+    }
+};
